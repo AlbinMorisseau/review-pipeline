@@ -1,0 +1,19 @@
+{
+"child":[],
+"pet": [
+    "pet", "pets","pet-friendly","pets-friendly",
+    "animals allowed", "animals-allowed", "animal friendly",
+    "dog", "dogs", "dog-friendly",
+    "pup", "pups", "puppy", "puppies",
+    "canine",
+    "cat", "cats", "cat-friendly",
+    "kitten", "kittens",
+    "rabbit", "rabbits",
+    "hamster", "hamsters",
+    "ferret", "ferrets",
+    "bird", "birds",
+    "parrot", "parrots",
+    "furry companion","furry companions"
+  ],
+  "handicap":[]
+}
