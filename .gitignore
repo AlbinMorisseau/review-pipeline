@@ -9,8 +9,12 @@ venv/*
 data/*.csv
 results/*
 models/**
+logs/**
 scripts/publish_model.py
 
 !models/
 !models/**/
 !models/**/.gitkeep
+!logs/
+!logs/**/
+!logs/**/.gitkeep
