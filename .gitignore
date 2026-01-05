@@ -8,5 +8,9 @@ __pycache__/
 venv/*
 data/*.csv
 results/*
-models/
+models/**
 scripts/publish_model.py
+
+!models/
+!models/**/
+!models/**/.gitkeep
