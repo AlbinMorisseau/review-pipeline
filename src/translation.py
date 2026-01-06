@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import logging
 
-# Suppress noisy logs
 logging.getLogger("langid").setLevel(logging.WARNING)
 
 def detect_and_translate(df: pl.DataFrame, col_name: str, num_threads: int = 4) -> tuple[pl.DataFrame, int]:
@@ -21,8 +20,6 @@ def detect_and_translate(df: pl.DataFrame, col_name: str, num_threads: int = 4) 
 
     texts = df[col_name].to_list()
     
-    # Note: langid is fast enough that threading overhead might outweigh benefits on small data,
-    # but kept parallel as per requirements.
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         langs = list(tqdm(executor.map(_detect, texts), total=len(texts), desc="Detecting Language"))
         

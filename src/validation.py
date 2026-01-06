@@ -14,6 +14,6 @@ def compare_results(data: List[Dict]) -> List[Dict]:
     return data
 
 def get_stats(data: List[Dict]) -> Dict[str, int]:
-    """Returns basic stats about agreement."""
+    """Returns basic stats about agreement of keywords and BERT"""
     c = Counter(item.get("status", "unknown") for item in data)
     return dict(c)

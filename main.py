@@ -4,6 +4,7 @@ import json
 import torch
 import polars as pl
 from dotenv import load_dotenv
+from pathlib import Path
 
 from src.utils import setup_logger, load_json_config
 from src.cleaning import basic_cleaning, convert_numbers, remove_special_characters, apply_stopwords_removal
@@ -12,6 +13,7 @@ from src.extraction import extract_categories, prepare_keywords
 from src.chunking import merge_reviews_and_keywords, create_chunks
 from src.inference import load_bert_model, run_inference
 from src.validation import compare_results, get_stats
+from src.export import export_category_csvs
 
 load_dotenv()
 NUM_THREADS = int(os.environ.get("NUM_THREADS", 6))
@@ -20,7 +22,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 def main():
     parser = argparse.ArgumentParser(description="End-to-End Review Pipeline")
     parser.add_argument("--input", "-i", required=True, help="Path to original input CSV")
-    parser.add_argument("--output", "-o", default="results.json", help="Path to final JSON output")
+    parser.add_argument("--output", "-o", default="results/results.json", help="Path to final JSON output")
     parser.add_argument("--column", "-c",default="review", help="Review column name")
     parser.add_argument("--id_col", default="id", help="ID column name")
     parser.add_argument("--categories", default="data/categories.json")
@@ -34,7 +36,11 @@ def main():
     logger.info(f"Starting Pipeline on {DEVICE} with {NUM_THREADS} threads.")
 
     # STEP 1-3 - Cleaning and Keywords extraction
-    kw_output_temp = os.path.join(args.output,"temp_keywords_output.csv")
+    dataset_name = Path(args.input).stem
+    output_dir = Path(args.output).parent / dataset_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+    kw_output_temp = output_dir / "temp_keywords_output.csv"
+    json_output_path = output_dir / Path(args.output).name
     
     try:
         df = pl.read_csv(args.input)
@@ -103,8 +109,17 @@ def main():
     logger.info(f"Validation Stats: {stats}")
 
     # Save Final JSON
-    with open(args.output, "w", encoding="utf-8") as f:
+    with open(json_output_path, "w", encoding="utf-8") as f:
         json.dump(final_data, f, indent=2, ensure_ascii=False)
+
+    # STEP 7 - Export CSVs per category
+    logger.info("Exporting CSV files...")
+    
+    export_category_csvs(
+        data=final_data,
+        output_dir=output_dir,
+        categories_path= Path(args.categories)
+    )
     
     logger.info(f"Pipeline finished. Data saved to {args.output}")
 

@@ -11,7 +11,7 @@ import polars as pl
 class AccessibleGoScraper:
     """Scraper to extract reveiws from AccessibleGO."""
     
-    # base URLs for community sources (feed+archives)
+    # base URLs for community sources (feed and archives)
     FEED_API_URL = "https://community.accessiblego.com/internal_api/home_page_posts"
     ARCHIVE_API_BASE = "https://community.accessiblego.com/internal_api/spaces"
     

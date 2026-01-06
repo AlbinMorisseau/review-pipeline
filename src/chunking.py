@@ -15,8 +15,7 @@ def merge_reviews_and_keywords(processed_csv: str, original_csv: str, id_col: st
     # Join
     df = kw_df.join(orig_subset, on=id_col, how="left")
     
-    # Aggregate categories per ID (if multiple rows per review exist in processed file)
-    # Note: Assuming 'category' column exists from extraction step
+    # Aggregate categories per ID
     df = df.group_by(id_col).agg([
         pl.col("review").first(),
         pl.col("category").cast(pl.Utf8).str.join(" ")
@@ -155,11 +154,10 @@ def create_chunks(
         
         for ch in unique_chunks:
             all_chunks.append({
-                "original_id": row["id"], # Assumes column name is 'id'
+                "original_id": row["id"],
                 "review" : row["review"],
                 "chunk": ch["text"],
                 "kw_category": ch["kw_category"],
-                # We can store original review if needed, but it increases file size significantly
             })
             
     return all_chunks
