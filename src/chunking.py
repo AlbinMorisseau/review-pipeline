@@ -156,7 +156,9 @@ def create_chunks(
             all_chunks.append({
                 "original_id": row["id"],
                 "review" : row["review"],
+                "review_cleaned" : row["review_cleaned"],
                 "chunk": ch["text"],
+                "keywords_found": row["keywords_found"],
                 "kw_category": ch["kw_category"],
             })
             

@@ -1,6 +1,15 @@
-{ 
- "child": [],
- "pet": [
+{   "child": [
+        "childhood", 
+        "poster child", 
+        "child process", 
+        "family friends",
+        "slept like a baby", 
+        "baby corn", 
+        "family's airline",
+        "baby shower"
+    ],
+    
+    "pet": [
         "hot dog","hotdog","hotdogs", 
         "dogecoin", 
         "corn dog", 
@@ -33,5 +42,19 @@
         "the dog",
         "pet peeve"
     ],
-    "handicap": []
+    "handicap": [
+        "weight lift", 
+        "lift ticket", 
+        "ski lift", 
+        "elevator pitch", 
+        "lift-off", 
+        "lift bridge",
+        "blind eye",
+        "window blinds","window blind","blinds",
+        "blind date",
+        "blind mask",
+        "rent scooter",
+        "hire scooter",
+        "scooter traffic"
+    ]
 }

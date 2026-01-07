@@ -39,7 +39,7 @@ class AccessibleGoScraper:
         }
     }
     
-    def __init__(self, output_file: str = "accessiblego_reviews.csv"):
+    def __init__(self, output_file: str = "data/accessiblego.csv"):
         self.output_file = output_file
         self.session = requests.Session()
         self.session.headers.update({
@@ -507,5 +507,5 @@ class AccessibleGoScraper:
 
 if __name__ == "__main__":
     logger = setup_logger()
-    scraper = AccessibleGoScraper(output_file="../data/data_accessiblego.csv")
+    scraper = AccessibleGoScraper(output_file="data/accessiblego.csv")
     scraper.run(scrape_feed=True, scrape_archives=True)

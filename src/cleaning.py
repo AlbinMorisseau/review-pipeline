@@ -94,7 +94,10 @@ def remove_stopwords_from_text(text: str, keep_exceptions: bool = True) -> str:
     return " ".join(filtered)
 
 def apply_stopwords_removal(df: pl.DataFrame, col_name: str) -> pl.DataFrame:
-    """Applies stopwords removal on DataFrame column."""
+    """Applies stopwords removal on a DataFrame column and keeps the original."""
+    alias = col_name + "_cleaned"
     return df.with_columns(
-        pl.col(col_name).map_elements(remove_stopwords_from_text, return_dtype=pl.Utf8)
+        pl.col(col_name)
+        .map_elements(remove_stopwords_from_text, return_dtype=pl.Utf8)
+        .alias(alias)
     )

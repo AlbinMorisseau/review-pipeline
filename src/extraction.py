@@ -46,6 +46,7 @@ def extract_categories(
 
         for row in data_rows:
             text = row[col_name]
+            text_cleaned = row[col_name + "_cleaned"]
             rid = row[id_col]
             
             if not isinstance(text, str): continue
@@ -59,11 +60,12 @@ def extract_categories(
             found = [kw for kw, pat in kw_patterns if pat.search(temp_text)]
             
             if found:
-                results.append((rid, text, ", ".join(found), cat_name))
+                results.append((rid, text, text_cleaned, ", ".join(found), cat_name))
         return results
 
     # Execution
-    rows = df.select([id_col, col_name]).to_dicts()
+    alias = col_name + "_cleaned"
+    rows = df.select([id_col, col_name,alias]).to_dicts()
     all_results = []
     
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
@@ -76,10 +78,10 @@ def extract_categories(
             all_results.extend(fut.result())
 
     if not all_results:
-        return pl.DataFrame(schema={id_col: pl.Int64, "review": pl.Utf8, "keywords": pl.Utf8, "category": pl.Utf8})
+        return pl.DataFrame(schema={id_col: pl.Int64, "review": pl.Utf8, "review_cleaned": pl.Utf8, "keywords": pl.Utf8, "category": pl.Utf8})
 
     return pl.DataFrame(
         all_results, 
-        schema=[id_col, "review", "keywords_found", "category"], 
+        schema=[id_col, "review", "review_cleaned", "keywords_found", "category"], 
         orient="row"
     )

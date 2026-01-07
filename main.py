@@ -50,7 +50,7 @@ def main():
         df, _ = detect_and_translate(df, args.column, NUM_THREADS)
         
         # Stopwords removal specific for keyword matching
-        #df_clean = apply_stopwords_removal(df, args.column)
+        df_clean = apply_stopwords_removal(df, args.column)
         
         cats = load_json_config(args.categories)
         excls = load_json_config(args.exclusions)
@@ -59,8 +59,7 @@ def main():
         excls_clean = prepare_keywords(excls)
         
         # Extract keywords
-        df_keywords = extract_categories(df, args.column, cats_clean, excls_clean, args.id_col, NUM_THREADS)
-        df_keywords.write_csv(kw_output_temp)
+        df_keywords = extract_categories(df_clean, args.column, cats_clean, excls_clean, args.id_col, NUM_THREADS)
         logger.info("Cleaning & Keywords extraction Done.")
         
     except Exception as e:
@@ -70,16 +69,13 @@ def main():
     # STEP 4 - Chunking
     logger.info("Starting Chunking...")
     try:
-
-        # Re-merge logic in memory for efficiency:
-        joined_df = df_keywords.join(df.select([args.id_col, args.column]), on=args.id_col, how="left")
         
         # Load Tokenizer for chunking (from model path)
         logger.info(f"Loading tokenizer from {args.model_path}")
         tokenizer, model = load_bert_model(args.model_path, DEVICE)
         
         # Raw Categories for regex matching inside chunks
-        chunk_data = create_chunks(joined_df, tokenizer, 128, cats, excls)
+        chunk_data = create_chunks(df_keywords, tokenizer, 128, cats, excls)
         logger.info(f"Created {len(chunk_data)} chunks.")
         
     except Exception as e:
