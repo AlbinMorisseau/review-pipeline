@@ -51,7 +51,7 @@ def extract_categories(
             
             if not isinstance(text, str): continue
             
-            temp_text = text
+            temp_text = text_cleaned
             # Mask exclusions
             for pat in ex_patterns:
                 temp_text = pat.sub(" ", temp_text)
@@ -78,7 +78,7 @@ def extract_categories(
             all_results.extend(fut.result())
 
     if not all_results:
-        return pl.DataFrame(schema={id_col: pl.Int64, "review": pl.Utf8, "review_cleaned": pl.Utf8, "keywords": pl.Utf8, "category": pl.Utf8})
+        return pl.DataFrame(schema={id_col: pl.Int64, "review": pl.Utf8, "review_cleaned": pl.Utf8, "keywords_found": pl.Utf8, "category": pl.Utf8})
 
     return pl.DataFrame(
         all_results, 
