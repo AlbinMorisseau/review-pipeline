@@ -1,5 +1,5 @@
 """
-test_translation.py - Tests améliorés pour le module translation
+test_translation.py 
 """
 import pytest
 import polars as pl

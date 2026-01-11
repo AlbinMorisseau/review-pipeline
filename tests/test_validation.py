@@ -1,5 +1,5 @@
 """
-test_validation.py - Tests améliorés pour le module validation
+test_validation.py
 """
 import pytest
 from src.validation import compare_results, get_stats

@@ -93,7 +93,7 @@ def export_complementary_csvs(df_reference: pl.DataFrame, id_col: str, review_co
             continue
 
         df_cat = pl.read_csv(category_file)
-        cat_ids = df_cat["original_id"]
+        cat_ids = df_cat["original_id"].to_list()
         df_complement = df_reference.filter(~df_reference[id_col].is_in(cat_ids))
 
         df_complement = df_complement.select([
