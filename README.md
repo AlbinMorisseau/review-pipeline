@@ -8,11 +8,106 @@ The aim of this project is to study the behaviors and the needs of travellers wi
 
 The following elements are available in this repository:
 
-1. **End to end pipeline to extract reviews related to travellers' needs**
+## 1. End-to-End Pipeline to Extract Reviews Related to Travellers’ Needs
 
-Will be detailled soon...
+This repository provides a **reproducible and scalable end-to-end pipeline** designed to extract travel reviews related to specific traveller needs from large, heterogeneous datasets.
 
-2. **Tools for topic modeling**
+The pipeline focuses on three traveller categories:
+- travellers with **pets**,
+- travellers with **children**,
+- travellers with **disabilities**.
+
+The main objective is to transform raw, noisy review corpora into **high-quality, semantically validated subsets** that can be reliably used for downstream analyses such as topic modelling, behavioural studies, or comparative evaluations.
+
+To achieve this, the proposed approach combines **heuristic filtering**, **context-aware text segmentation**, and **neural semantic validation** in a multi-layer architecture.
+
+---
+
+### 1.1 Global Pipeline Architecture
+
+![Global pipeline architecture](images/global.svg)
+
+The pipeline is structured as a **three-layer filtering funnel**, where each layer progressively refines the dataset by addressing a specific challenge:
+
+1. Text cleaning and normalisation  
+2. High-recall heuristic extraction  
+3. High-precision semantic validation  
+
+This design ensures both **robustness and interpretability**, while remaining computationally efficient for large-scale datasets.
+
+---
+
+### 1.2 Layer 1 — Preprocessing and Text Normalisation
+
+![Preprocessing layer](images/layer_1.svg)
+
+The first layer prepares raw review data for reliable extraction and classification.  
+It enforces a consistent textual format across datasets originating from different platforms and languages.
+
+The main preprocessing steps include:
+- Removal of reviews with missing text and duplicate entries
+- Conversion of numerical values into their textual form
+- Removal of special characters, URLs, email addresses, and web artefacts
+- Automatic language detection and translation of non-English reviews into English
+
+This layer significantly reduces noise and ensures that all reviews are comparable and suitable for downstream keyword matching and semantic modelling.
+
+---
+
+### 1.3 Layer 2 — Heuristic Keyword Filtering and Context-Aware Chunking
+
+![Keyword filtering and chunking layer](images/layer_2.svg)
+
+This layer performs an initial **high-recall extraction** of candidate reviews using curated keyword dictionaries.
+
+#### Heuristic keyword filtering
+For each traveller category, a dedicated dictionary of keywords and expressions is defined.  
+A review is selected if it contains at least one keyword associated with the target category.  
+An optional exclusion dictionary is used to filter out known false positives (e.g. *“hot dog”* when filtering for pets).
+
+This step prioritises recall to avoid discarding potentially relevant reviews at an early stage.
+
+#### Context-aware chunking
+Travel reviews often contain multiple, loosely related topics. To prevent semantic dilution, the pipeline extracts **local textual contexts** around detected keywords.
+
+For each keyword occurrence:
+- the review is tokenised,
+- a fixed-length window of 128 tokens centred on the keyword is extracted,
+- overlapping chunks are merged using a keyword-density-based criterion.
+
+This results in compact, semantically focused text segments that preserve the relevant context for classification.
+
+---
+
+### 1.4 Layer 3 — Semantic Validation Using BERT
+
+![Semantic validation layer](images/layer_3.svg)
+
+The final layer addresses the lack of semantic understanding inherent to keyword-based methods.
+
+Each extracted chunk is validated using a **fine-tuned BERT-based classifier**, trained to determine whether the text genuinely refers to:
+- travellers with pets,
+- travellers with children,
+- travellers with disabilities.
+
+A chunk is considered valid if the predicted probability for the corresponding category exceeds a fixed decision threshold.
+
+To maximise precision, a review is included in the final dataset **only if**:
+1. it passes the heuristic keyword filtering stage, and  
+2. its chunk is semantically validated by the BERT model.
+
+This strict intersection rule effectively removes false positives while preserving high recall.
+
+---
+
+### 1.5 Outputs 
+
+The pipeline produces in the results/your_original_dataset_name :
+- one CSV file per traveller category containing semantically validated reviews,
+- complementary CSV files containing non-matching reviews for comparative analyses.
+
+
+## 2. **Tools for topic modeling**
 
 Will be detailled soon...
 
@@ -30,6 +125,7 @@ NB: We strongly recommend using hardware or cloud services to significantly spee
 ```
 review-pipeline/
 ├── data/ # Input data, configuration files (categories, exclusions)
+├── images/ # Descriptive images of the pipeline architecture
 ├── logs/ # Pipeline logs
 ├── models/bert_finetuned/ # Fine-tuned BERT model and tokenizer for validation
 ├── scripts/ # Standalone scripts (scraping, model dowloading)
@@ -41,14 +137,16 @@ review-pipeline/
 └── requirements.txt
 ```
 
-## Setup of the project
+## Setup and Execution
 
-1.  **Clone the repository:**
+### 2.1 Environment Setup
+
+**Clone the repository:**
     ```bash
     git clone [https://github.com/AlbinMorisseau/review-pipeline.git](https://github.com/AlbinMorisseau/review-pipeline.git)
     cd review-pipeline
     ```
-2.  **Create and activate a virtual envrionment:**
+**Create and activate a virtual envrionment:**
     ```bash
     python -m venv venv
     # For Windows
@@ -56,18 +154,78 @@ review-pipeline/
     # For MacOS/Linux
     source venv/bin/activate
     ```
-3.  **Install dependancies:**
+**Install dependancies:**
     ```bash
     pip install -r requirements.txt
     ```
-4.  **Download fine tuned BERT model for validation:**
+**Download fine tuned BERT model for validation:**
     ```bash
     python -m scripts/download_model.py
     ```
-5.  **(Optional) Launch tests:**
+**(Optional) Launch tests:**
     ```bash
     pytest tests/
     ```
+
+### 2.2 Configuration Files
+
+In order to launch the pipeline effectively, it is necessary to modify the following files:
+
+- **.env file** : Modify the global variable NUM_THREADS to suit your CPU's capabilities. 
+- **data/categories.json** : You can adapt the lists of keywords associated with the three    categories of travellers to best suit the needs of your use case. If you do not necessarily have a clear idea of the results you want to achieve, we advise you not to modify them.
+- **data/exclusions.json** Similarly, if you have identified words that could be problematic for the precise extraction of your reviews, you can modify the list of words that you do not want to take into account in the heuristic filtering.
+
+If you do not want to use the pipeline for the three types of travellers, you can simply replace the list of keywords and excluded words with an empty list.
+
+Also make sure to put your original reviews dataset in the data folder with at least a column containging the reviews and another column containing a unique id for each row.
+
+### 2.3 Running the Pipeline
+
+The end-to-end pipeline is executed via the `main.py` entry point and can be configured using the following command:
+
+```bash
+python main.py --input "your_input_file.csv"
+```
+
+The available command-line parameters are described below.
+
+--input (-i) [required]
+Path to the input CSV file containing the original reviews.
+The file must include at least one column containing the review text.
+
+--output (-o)
+Path to the output file generated by the pipeline (default: results/results.json).
+The output contains the final set of semantically validated reviews together with their predicted traveller categories.
+
+--column (-c)
+Name of the column containing the review text in the input CSV (default: review).
+
+--id_col
+Name of the column containing unique review identifiers (default: id).
+This identifier is preserved throughout the pipeline to ensure traceability between input and output.
+
+--categories
+Path to the JSON file defining keyword dictionaries for each traveller category
+(default: data/categories.json).
+
+--exclusions
+Path to the JSON file defining exclusion patterns used to remove known false positives
+(default: data/exclusions.json).
+
+--model_path
+Path to the directory containing the fine-tuned BERT model and tokenizer used for semantic validation
+(default: models/bert_finetuned).
+
+--batch_size
+Batch size used during BERT inference (default: 16).
+This parameter can be adjusted according to available GPU or CPU memory.
+
+--threshold
+Decision threshold applied to model prediction probabilities (default: 0.5).
+Higher values increase precision at the cost of recall, while lower values favour recall.
+
+These parameters allow the pipeline to be flexibly adapted to different datasets, review schemas, and computational constraints while preserving reproducibility.
+
 
 ## Potential datasets use
 

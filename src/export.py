@@ -76,3 +76,32 @@ def export_category_csvs(data: List[Dict], output_dir: Path, categories_path: Pa
     logger.info(
         f"CSV creation ended : {generated_files} files created in '{output_dir}'. "
     )
+
+def export_complementary_csvs(df_reference: pl.DataFrame, id_col: str, review_col: str, category_csv_dir: Path, output_dir: Path):
+    """
+    For each category CSV in category_csv_dir, create a complementary CSV
+    containing all rows from the original CSV not in the category CSV.
+    """
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    target_files = ["child.csv", "handicap.csv", "pet.csv"]
+
+    for filename in target_files:
+        
+        category_file = category_csv_dir / filename
+        if not category_file.exists():
+            continue
+
+        df_cat = pl.read_csv(category_file)
+        cat_ids = df_cat["original_id"]
+        df_complement = df_reference.filter(~df_reference[id_col].is_in(cat_ids))
+
+        df_complement = df_complement.select([
+            pl.col(id_col).alias("original_id"),
+            pl.col(review_col).alias("review"),
+            pl.col(f"{review_col}_cleaned").alias("review_cleaned")
+        ])
+
+        complement_file = output_dir / f"no_{category_file.stem}.csv"
+        df_complement.write_csv(complement_file)
+

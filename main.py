@@ -13,7 +13,7 @@ from src.extraction import extract_categories, prepare_keywords
 from src.chunking import merge_reviews_and_keywords, create_chunks
 from src.inference import load_bert_model, run_inference
 from src.validation import compare_results, get_stats
-from src.export import export_category_csvs
+from src.export import export_category_csvs,export_complementary_csvs
 
 load_dotenv()
 NUM_THREADS = int(os.environ.get("NUM_THREADS", 6))
@@ -61,7 +61,8 @@ def main():
         # Extract keywords
         df_keywords = extract_categories(df_clean, args.column, cats_clean, excls_clean, args.id_col, NUM_THREADS)
         logger.info("Cleaning & Keywords extraction Done.")
-        
+        df_keywords.write_csv("data/results.csv")
+
     except Exception as e:
         logger.error(f"Preprocessing failed: {e}")
         return
@@ -115,6 +116,14 @@ def main():
         data=final_data,
         output_dir=output_dir,
         categories_path= Path(args.categories)
+    )
+
+    export_complementary_csvs(
+        df_reference=df_clean,
+        id_col = args.id_col,
+        review_col = args.column,
+        category_csv_dir = output_dir,
+        output_dir= output_dir
     )
     
     logger.info(f"Pipeline finished. Data saved to {args.output}")
