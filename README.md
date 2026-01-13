@@ -109,7 +109,32 @@ The pipeline produces in the results/pipeline/your_original_dataset_name folder:
 
 ## 2. **Tools for topic modeling**
 
-Will be detailled soon...
+Once traveller-specific reviews have been extracted and semantically validated, the repository provides several **topic modelling tools** to analyse recurring themes, concerns, and needs within each traveller group (pets, children, disabilities), and to compare them with the general traveller population.
+
+The objective of this stage is twofold:
+- to **validate the semantic coherence** of the extracted review subsets,
+- to **identify latent and explicit needs** (e.g. pet policies, accessibility conditions, family-friendly amenities).
+
+The following complementary approaches are implemented:
+
+### 2.1 TF–IDF Analysis
+TF–IDF is used to highlight **discriminative unigrams and bigrams** that are characteristic of a given traveller group compared to the rest of the corpus (e.g. *“pet fee”*, *“accessible room”*).  
+It also serves as the input representation for matrix factorisation and probabilistic topic models.
+
+### 2.2 Non-negative Matrix Factorization (NMF)
+NMF is applied to TF–IDF matrices to extract **interpretable, additive topics** expressed as clusters of co-occurring terms.  
+This method is well suited for identifying clear and recurrent needs such as policies, amenities, or constraints specific to each traveller group.
+
+### 2.3 Latent Dirichlet Allocation (LDA)
+LDA provides a probabilistic topic modelling framework in which each review is represented as a mixture of latent topics.  
+It enables the analysis of **topic prevalence and co-occurrence patterns**, and facilitates quantitative comparisons between constrained traveller groups and non-group reviews.
+
+### 2.4 BERTopic
+BERTopic leverages **transformer-based embeddings**, dimensionality reduction, and density-based clustering to identify topics in a semantic space rather than relying solely on word co-occurrence.  
+This approach captures **nuanced and context-dependent needs**, even when similar concerns are expressed using different vocabularies.
+
+Together, these tools offer multiple, complementary perspectives on travellers’ needs, ranging from easily interpretable keyword-based insights to embedding-driven semantic structures.
+
 
 ## Hardware
 
