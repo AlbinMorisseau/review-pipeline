@@ -22,7 +22,6 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 def main():
     parser = argparse.ArgumentParser(description="End-to-End Review Pipeline")
     parser.add_argument("--input", "-i", required=True, help="Path to original input CSV")
-    parser.add_argument("--output", "-o", default="results/results.json", help="Path to final JSON output")
     parser.add_argument("--column", "-c",default="review", help="Review column name")
     parser.add_argument("--id_col", default="id", help="ID column name")
     parser.add_argument("--categories", default="data/categories.json")
@@ -32,15 +31,15 @@ def main():
     parser.add_argument("--threshold", type=float, default=0.5)
     
     args = parser.parse_args()
-    logger = setup_logger()
+    logger = setup_logger("pipeline")
     logger.info(f"Starting Pipeline on {DEVICE} with {NUM_THREADS} threads.")
 
     # STEP 1-3 - Cleaning and Keywords extraction
+    RESULTS_DIR = "results/pipeline/results.json"
     dataset_name = Path(args.input).stem
-    output_dir = Path(args.output).parent / dataset_name
+    output_dir = Path(RESULTS_DIR).parent / dataset_name
     output_dir.mkdir(parents=True, exist_ok=True)
-    kw_output_temp = output_dir / "temp_keywords_output.csv"
-    json_output_path = output_dir / Path(args.output).name
+    json_output_path = output_dir / Path(RESULTS_DIR).name
     
     try:
         df = pl.read_csv(args.input)
@@ -126,7 +125,7 @@ def main():
         output_dir= output_dir
     )
     
-    logger.info(f"Pipeline finished. Data saved to {args.output}")
+    logger.info(f"Pipeline finished. Data saved to {output_dir}")
 
 if __name__ == "__main__":
     main()

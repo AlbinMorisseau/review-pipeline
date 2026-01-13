@@ -18,7 +18,7 @@ def setup_logger(name: str = "pipeline", log_dir: str = "logs") -> logging.Logge
     ch.setFormatter(formatter)
     
     # File Handler
-    fh = logging.FileHandler(os.path.join(log_dir, "pipeline.log"))
+    fh = logging.FileHandler(os.path.join(log_dir, f"{name}.log"))
     fh.setFormatter(formatter)
     
     if not logger.handlers:
