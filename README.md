@@ -107,7 +107,7 @@ The pipeline produces in the results/pipeline/your_original_dataset_name folder:
 - complementary CSV files containing non-matching reviews for comparative analyses.
 
 
-## 2. **Tools for topic modeling**
+## 2. **Tools for topic modelling and need extraction**
 
 Once traveller-specific reviews have been extracted and semantically validated, the repository provides several **topic modelling tools** to analyse recurring themes, concerns, and needs within each traveller group (pets, children, disabilities), and to compare them with the general traveller population.
 
@@ -135,16 +135,31 @@ This approach captures **nuanced and context-dependent needs**, even when simila
 
 Together, these tools offer multiple, complementary perspectives on travellers’ needs, ranging from easily interpretable keyword-based insights to embedding-driven semantic structures.
 
+### 2.5 Need Extractor Tool
+
+The **Need Extractor Tool** complements traditional topic modelling methods by transforming traveller review segments into explicit, actionable user needs. Unlike statistical approaches that output clusters of terms, this tool leverages a local LLM to perform semantic abstraction, producing coherent need statements from context-aware chunks of reviews.
+
+![Need Extractor Tool Architecture](images/need_extractor.png)
+
+The workflow consists of three sequential phases:
+
+- **Generative Extraction:** Candidate needs are mined from keyword-focused review chunks using a quantized LLM. The model abstracts specific observations into general, shareable need statements while providing justifications for validity.
+
+- **Semantic Filtering:** Redundant or overlapping needs are consolidated through embedding-based clustering, selecting representative needs for each cluster.
+
+- **Hybrid Review Assignment:** Original review chunks are mapped to extracted needs using a combination of embedding similarity and TF–IDF matching, ensuring assignments are both semantically relevant and lexically supported.
+
+This tool is fully local and free to use.
 
 ## Hardware
 
-We ran the code using this laptop hardware:
-- RTX4070 GPU / 8 Go RAM
-- Intel Core I9 CPU / 32 Go RAM
+We ran the code on the following laptop hardware:
+- RTX4070 GPU / 8 GB RAM
+- Intel Core i9 CPU / 32 GB RAM
 
-Please modify the NUM_THREADS environment variable in the .env file to match your CPU's capabilities to avoid damaging your hardware.
+Please modify the NUM_THREADS environment variable in the .env file to match your CPU's capabilities to avoid overloading your hardware.
 
-NB: We strongly recommend using hardware or cloud services to significantly speed up calculation times.
+NB: We strongly recommend using more powerful hardware or cloud services to significantly speed up calculation times.
 
 ## Project Structure
 ```
@@ -153,7 +168,8 @@ review-pipeline/
 ├── images/ # Descriptive images of the pipeline architecture
 ├── logs/ # Pipeline logs
 ├── models/bert_finetuned/ # Fine-tuned BERT model and tokenizer for validation
-├── scripts/ # Standalone scripts (scraping, model dowloading)
+├── results/ # folder containing the results of the pipeline and topic modelling
+├── scripts/ # Standalone scripts (scraping, model downloading)
 ├── src/ # Core pipeline modules 
 ├── tests/ # Unit and integration tests
 ├── topic_modelling / # Contains tools to help extract topics and needs from reviews
@@ -172,7 +188,7 @@ review-pipeline/
     git clone [https://github.com/AlbinMorisseau/review-pipeline.git](https://github.com/AlbinMorisseau/review-pipeline.git)
     cd review-pipeline
     ```
-2. **Create and activate a virtual envrionment:**
+2. **Create and activate a virtual environment:**
     ```bash
     python -m venv venv
     # For Windows
@@ -180,15 +196,28 @@ review-pipeline/
     # For MacOS/Linux
     source venv/bin/activate
     ```
-3. **Install dependancies:**
+3. **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
-4. **Download fine tuned BERT model for validation:**
+
+4. **Download stop words for topic modelling:**
+    ```bash
+    python -m spacy download en_core_web_sm
+    ```
+
+5. **Download fine-tuned BERT model for validation:**
     ```bash
     python -m scripts/download_model.py
     ```
-5. **(Optional) Launch tests:**
+
+6. **Download Ollama models used by the Need Extractor Tool:**
+    ```bash
+    ollama pull mistral
+    ollama pull nomic-embed-text
+    ```
+
+7. **(Optional) Launch tests:**
     ```bash
     pytest tests/
     ```
@@ -203,7 +232,7 @@ In order to launch the pipeline effectively, it is necessary to modify the follo
 
 If you do not want to use the pipeline for the three types of travellers, you can simply replace the list of keywords and excluded words with an empty list.
 
-Also make sure to put your original reviews dataset in the data folder with at least a column containging the reviews and another column containing a unique id for each row.
+Also make sure to put your original reviews dataset in the data folder with at least a column containing the reviews and another column containing a unique id for each row.
 
 ### 2.3 Running the Pipeline
 
@@ -217,8 +246,8 @@ The available command-line parameters are described below.
 
 - **`--input` (`-i`)** **[required]**  
   Path to the input CSV file containing the original reviews.  
-  The file must include at least one column containing the review text and another containning ids.
-  It is strongly advised to put it in the data folder with explciit name.
+  The file must include at least one column containing the review text and another containing IDs.
+  It is strongly advised to put it in the data folder with an explicit name.
 
 - **`--column` (`-c`)**  
   Name of the column containing the review text in the input CSV  
@@ -255,12 +284,100 @@ These parameters allow the pipeline to be flexibly adapted to different datasets
 
 ### 2.3 Running the Need Extractor tool
 
-To be detailled soon...
+The Need Extractor tool can be executed on the pipeline outputs from the project root using the following command:
 
-## Potential datasets use
+```bash
+python -m topic_modelling.need_extractor --input "results/pipeline/your_dataset_name/pet.csv" --category pet
+```
+
+The `--category` argument must be adapted to match your category of interest.
+
+This category is injected into the LLM prompts to guide the extraction of context-aware and shareable user needs.
+
+The available command-line parameters are described below.
+
+- **`--input`** *(required)*  
+  Path to the input CSV file containing the processed reviews.  
+  This file is typically an output of the upstream pipeline.
+
+- **`--text_col`**  
+  Name of the column containing the textual review chunks used for need extraction.  
+  **Default:** `chunk`  
+  Using chunked text is recommended, as full reviews may introduce noise.
+
+- **`--keyword_col`**  
+  Column used to group reviews before LLM processing.  
+  **Default:** `keywords_found`  
+  If the column is missing or empty, all reviews are processed uniformly.
+
+- **`--category`** *(required)*  
+  Traveller context category used to steer the LLM extraction.  
+  This parameter strongly influences the semantic framing of extracted needs.
+
+- **`--batch_size`**  
+  Number of reviews sent to the LLM per request during raw need extraction.  
+  **Default:** `15`  
+  Larger values reduce the number of LLM calls but may decrease precision.
+
+- **`--sim_threshold`**  
+  Similarity threshold used to merge semantically close needs during clustering.  
+  **Default:** `0.5`  
+  Clustering is performed using cosine distance defined as `1 − similarity`.
+
+- **`--min_cluster_size`**  
+  Minimum number of similar raw needs required for a cluster to be kept.  
+  **Default:** `2`  
+  Clusters below this size are discarded to avoid weak or anecdotal needs.
+
+- **`--embed_threshold`**  
+  Minimum cosine similarity required to assign a review to a need using embeddings.  
+  **Default:** `0.5`
+
+- **`--tfidf_threshold`**  
+  Minimum TF-IDF similarity score used as a fallback assignment mechanism.  
+  **Default:** `0.1`
+
+- **`--min_needs_number`**  
+  Minimum number of reviews that must be linked to a need for it to appear in the final summary.  
+  **Default:** `6`  
+  This parameter controls the selectivity of the final output.
+
+- **`--gen_model`**  
+  Ollama generation model used for need extraction.  
+  **Default:** `mistral`
+  Please make sure you have pulled the model you want to use.
+  ```bash
+  ollama pull <model_name>
+  ```
+
+- **`--embed_model`**  
+  Ollama embedding model used for semantic similarity computation.  
+  **Default:** `nomic-embed-text`
+  Please make sure you have pulled the model you want to use.
+  ```bash
+  ollama pull <model_name>
+  ```
+
+All results are written to the following directory: `results/topic_modelling/needs_extraction/`
+
+- **`reviews_needs_<category>.csv`**  
+  Detailed per-review assignments including the assigned need, similarity score, and assignment method (`embedding`, `tfidf`, or `none`).
+
+- **`needs_summary_<category>.json`**  
+  Aggregated JSON summary containing the final list of needs, their frequency, and a small set of representative reviews for each need.
+
+### 2.4 Running the Topic Modelling Toolkit
+
+A Jupyter notebook is provided in the `topic_modelling` folder. It allows you to apply the different topic modelling methods described above using the outputs generated by the pipeline.
+
+Detailed instructions are included directly in the notebook. You mainly need to adapt the file paths to match the data you want to process.
+
+The results will be saved in the `topic_modelling` folder, with separate subfolders automatically created for each topic modelling method during execution.
+
+## Potential dataset use
 
 This project has been tested on a wide range of publicly available review datasets covering hotels, restaurants, airlines, activities, and social media.  
-Below is the complete list of datasets. Please make shure that licences have not been updated since.
+Below is the complete list of datasets. Please make sure that their licenses have not changed since you access them.
 
 - **Booking.com Accommodation Reviews**  
   https://huggingface.co/datasets/Booking-com/accommodation-reviews/tree/main
@@ -303,7 +420,7 @@ Below is the complete list of datasets. Please make shure that licences have not
     We also provide scripts that enable ethical scraping of the community section of the accessiblego website, allowing qualitative reviews to be obtained on the needs of people with any kind of disability.
 
     ```bash
-    python -m scripts.scrapping_accessiblego
+    python -m scripts.scraping_accessiblego
     ```
 
     **WARNING:** Ensure that the robots.txt file has not been modified in the meantime and that scraping this site is still permitted. Please follow best practices by clearly identifying your intention and not overloading the site's internal APIs.
