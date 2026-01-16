@@ -282,6 +282,33 @@ The available command-line parameters are described below.
 
 These parameters allow the pipeline to be flexibly adapted to different datasets, review schemas, and computational constraints while preserving reproducibility.
 
+#### Outputs
+
+After running the pipeline, the output files can be found in: `results/pipeline/<name_of_your_dataset>/`
+
+For each category listed in `categories.json` and `exclusions.json` that is **not empty**, the pipeline generates a CSV file and its complementary file.
+
+**Example:**  
+If you only process the `pet` category, the folder will contain:
+- `pet.csv`
+- `no_pet.csv`
+
+
+Each CSV file contains the following columns:
+
+| Column           | Description |
+|-----------------|-------------|
+| `original_id`     | ID of the review in the original dataset |
+| `review`          | Original review text |
+| `review_cleaned`  | Review text after removing stopwords |
+| `chunk`           | Chunked version of the review |
+| `keywords_found`  | Keywords found in the review |
+| `status`          | Indicates whether heuristic filtering and BERT filtering agreed |
+
+
+A `results.json` file is also generated, containing detailed information about the different stages of the pipeline for each review.
+
+
 ### 2.3 Running the Need Extractor tool
 
 The Need Extractor tool can be executed on the pipeline outputs from the project root using the following command:
@@ -358,6 +385,8 @@ The available command-line parameters are described below.
   ollama pull <model_name>
   ```
 
+#### Outputs
+
 All results are written to the following directory: `results/topic_modelling/needs_extraction/`
 
 - **`reviews_needs_<category>.csv`**  
@@ -372,7 +401,9 @@ A Jupyter notebook is provided in the `topic_modelling` folder. It allows you to
 
 Detailed instructions are included directly in the notebook. You mainly need to adapt the file paths to match the data you want to process.
 
-The results will be saved in the `topic_modelling` folder, with separate subfolders automatically created for each topic modelling method during execution.
+#### Outputs
+
+The results will be saved in the `results/topic_modelling` folder, with separate subfolders automatically created for each topic modelling method during execution. The contents of each output file are detailed in the notebook.
 
 ## Potential dataset use
 

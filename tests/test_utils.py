@@ -36,7 +36,7 @@ class TestSetupLogger:
         """Test that log file is created."""
         setup_logger("test", log_dir=str(tmp_path))
         
-        log_file = tmp_path / "pipeline.log"
+        log_file = tmp_path / "test.log"
         assert log_file.exists()
     
     def test_logger_handlers(self, tmp_path):
