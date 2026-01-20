@@ -143,6 +143,20 @@ class NeedExtractor:
 
         embeddings = np.array([self._embed(t) for t in topics])
 
+        norms = np.linalg.norm(embeddings, axis=1)
+        valid_mask = norms > 0
+
+        filtered_topics = [t for t, v in zip(topics, valid_mask) if v]
+        filtered_embeddings = embeddings[valid_mask]
+
+        logger.info(
+            f"Removed {len(topics) - len(filtered_topics)} topics with zero embeddings"
+        )
+
+        if len(filtered_topics) < min_cluster_size:
+            logger.warning("Not enough valid topics after filtering")
+            return []
+
         # Distance threshold is 1 - similarity (cosine distance)
         distance_threshold = 1 - similarity_threshold
         
@@ -153,10 +167,16 @@ class NeedExtractor:
             distance_threshold=distance_threshold
         )
 
-        labels = clustering.fit_predict(embeddings)
+        labels = clustering.fit_predict(filtered_embeddings)
+
+        topic_to_embedding = {
+            t: e for t, e in zip(filtered_topics, filtered_embeddings)
+        }
+
 
         clusters = {}
-        for topic, label in zip(topics, labels):
+        for topic, label in zip(filtered_topics, labels):
+
             clusters.setdefault(label, []).append(topic)
 
         reduced_topics = []
@@ -166,8 +186,9 @@ class NeedExtractor:
                 continue
 
             # Find the centroid (most representative topic) of the cluster
-            vecs = np.array([self._embed(t) for t in group])
+            vecs = np.array([topic_to_embedding[t] for t in group])
             sim_matrix = cosine_similarity(vecs)
+
             # Index of the topic with highest average similarity to others in group
             central_idx = int(sim_matrix.mean(axis=1).argmax())
             reduced_topics.append(group[central_idx])
