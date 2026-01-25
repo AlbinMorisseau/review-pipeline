@@ -4,6 +4,7 @@ from typing import Dict, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from src.cleaning import remove_stopwords_from_text
+from src.utils import make_regex
 
 def prepare_keywords(data: Dict[str, List[str]]) -> Dict[str, List[str]]:
     """Clean stopwords from category/exclusion keywords list."""
@@ -27,14 +28,6 @@ def extract_categories(
     Matches keywords against text, considering exclusions.
     Returns filtered DataFrame.
     """
-    
-    # Helper for regex compilation
-    def make_regex(kw: str) -> str:
-        kw = kw.strip().replace(" - ", "-")
-        if " " in kw or "-" in kw:
-            # Handle phrases
-            return re.escape(kw).replace(r"\-", r"[-\s]").replace(r"\ ", r"\s+")
-        return r"\b" + re.escape(kw) + r"\b"
 
     # Core logic per category
     def process_category(cat_name, keywords, excluded_phrases, data_rows):
@@ -78,10 +71,10 @@ def extract_categories(
             all_results.extend(fut.result())
 
     if not all_results:
-        return pl.DataFrame(schema={id_col: pl.Int64, "review": pl.Utf8, "review_cleaned": pl.Utf8, "keywords_found": pl.Utf8, "category": pl.Utf8})
+        return pl.DataFrame(schema={id_col: pl.Int64, col_name: pl.Utf8, alias: pl.Utf8, "keywords_found": pl.Utf8, "category": pl.Utf8})
 
     return pl.DataFrame(
         all_results, 
-        schema=[id_col, "review", "review_cleaned", "keywords_found", "category"], 
+        schema=[id_col, col_name, alias, "keywords_found", "category"], 
         orient="row"
     )

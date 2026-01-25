@@ -10,7 +10,7 @@ from src.utils import setup_logger, load_json_config
 from src.cleaning import basic_cleaning, convert_numbers, remove_special_characters, apply_stopwords_removal
 from src.translation import detect_and_translate
 from src.extraction import extract_categories, prepare_keywords
-from src.chunking import merge_reviews_and_keywords, create_chunks
+from src.chunking import create_chunks
 from src.inference import load_bert_model, run_inference
 from src.validation import compare_results, get_stats
 from src.export import export_category_csvs,export_complementary_csvs
@@ -58,9 +58,9 @@ def main():
         excls_clean = prepare_keywords(excls)
         
         # Extract keywords
-        df_keywords = extract_categories(df_clean, args.column, cats_clean, excls_clean, args.id_col, NUM_THREADS)
+        df_keywords = extract_categories(df_clean, args.column,cats_clean, excls_clean, args.id_col, NUM_THREADS)
         logger.info("Cleaning & Keywords extraction Done.")
-        df_keywords.write_csv("data/results.csv")
+        #df_keywords.write_csv("data/results.csv")
 
     except Exception as e:
         logger.error(f"Preprocessing failed: {e}")
@@ -75,7 +75,7 @@ def main():
         tokenizer, model = load_bert_model(args.model_path, DEVICE)
         
         # Raw Categories for regex matching inside chunks
-        chunk_data = create_chunks(df_keywords, tokenizer, 128, cats, excls)
+        chunk_data = create_chunks(df_keywords, tokenizer, 128, cats, excls,args.id_col,args.column)
         logger.info(f"Created {len(chunk_data)} chunks.")
         
     except Exception as e:

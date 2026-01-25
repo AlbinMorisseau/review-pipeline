@@ -4,24 +4,6 @@ from typing import List, Dict, Set
 from transformers import PreTrainedTokenizerFast
 from src.utils import make_regex
 
-def merge_reviews_and_keywords(processed_csv: str, original_csv: str, id_col: str) -> pl.DataFrame:
-    """Merges the keyword extraction result with the original review text."""
-    kw_df = pl.read_csv(processed_csv)
-    orig_df = pl.read_csv(original_csv)
-    
-    # Select only necessary columns from original
-    orig_subset = orig_df.select([id_col, "review"])
-    
-    # Join
-    df = kw_df.join(orig_subset, on=id_col, how="left")
-    
-    # Aggregate categories per ID
-    df = df.group_by(id_col).agg([
-        pl.col("review").first(),
-        pl.col("category").cast(pl.Utf8).str.join(" ")
-    ])
-    return df
-
 def _token_overlap_ratio(tokens_a: List[int], tokens_b: List[int]) -> float:
     set_a, set_b = set(tokens_a), set(tokens_b)
     inter = len(set_a & set_b)
@@ -59,7 +41,9 @@ def create_chunks(
     tokenizer: PreTrainedTokenizerFast, 
     max_len: int, 
     keywords: Dict[str, List[str]], 
-    exclusions: Dict[str, List[str]]
+    exclusions: Dict[str, List[str]],
+    id_col: str,
+    review_col: str
 ) -> List[Dict]:
     """
     Main logic: splits reviews into chunks around detected keywords.
@@ -73,7 +57,7 @@ def create_chunks(
     ex_regex_map = {cat: [make_regex(e) for e in excls] for cat, excls in exclusions.items()}
 
     for row in df.iter_rows(named=True):
-        text = row["review"]
+        text = row[review_col]
         row_cats = set(row["category"].split()) if row["category"] else set()
         
         if not text or not row_cats: continue
@@ -151,12 +135,14 @@ def create_chunks(
 
         # 3. Deduplicate
         unique_chunks = _reduce_chunks(raw_chunks)
+
+        alias = review_col + "_cleaned"
         
         for ch in unique_chunks:
             all_chunks.append({
-                "original_id": row["id"],
-                "review" : row["review"],
-                "review_cleaned" : row["review_cleaned"],
+                "original_id": row[id_col],
+                "review" : row[review_col],
+                "review_cleaned" : row[alias],
                 "chunk": ch["text"],
                 "keywords_found": row["keywords_found"],
                 "kw_category": ch["kw_category"],

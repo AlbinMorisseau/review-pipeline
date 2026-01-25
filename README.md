@@ -183,6 +183,8 @@ review-pipeline/
 
 ### 2.1 Environment Setup
 
+**Python Version:** Developed and tested on Python 3.13.9.
+
 1. **Clone the repository:**
     ```bash
     git clone [https://github.com/AlbinMorisseau/review-pipeline.git](https://github.com/AlbinMorisseau/review-pipeline.git)

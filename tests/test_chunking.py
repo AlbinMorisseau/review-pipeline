@@ -4,7 +4,6 @@ from unittest.mock import Mock, MagicMock
 from src.chunking import (
     _token_overlap_ratio, 
     _reduce_chunks, 
-    merge_reviews_and_keywords,
     create_chunks
 )
 
@@ -102,52 +101,6 @@ class TestReduceChunks:
         result = _reduce_chunks(chunks, overlap_threshold=0.51)
         assert len(result) == 2  # Should not merge above threshold
 
-
-class TestMergeReviewsAndKeywords:
-    """Tests for merging keyword extraction with original reviews."""
-    
-    def test_basic_merge(self, tmp_path):
-        """Test basic merge functionality."""
-        # Create test CSVs
-        kw_file = tmp_path / "keywords.csv"
-        orig_file = tmp_path / "original.csv"
-        
-        kw_data = pl.DataFrame({
-            "id": [1, 1, 2],
-            "category": ["pet", "child", "pet"]
-        })
-        kw_data.write_csv(kw_file)
-        
-        orig_data = pl.DataFrame({
-            "id": [1, 2, 3],
-            "review": ["Great hotel for pets", "Nice place", "Quiet room"]
-        })
-        orig_data.write_csv(orig_file)
-        
-        result = merge_reviews_and_keywords(str(kw_file), str(orig_file), "id")
-        
-        assert result.height == 2  # Only IDs 1 and 2 have keywords
-        assert "review" in result.columns
-        assert "category" in result.columns
-        
-        # Check aggregation
-        id1_row = result.filter(pl.col("id") == 1)
-        assert "pet child" in id1_row["category"][0]
-    
-    def test_missing_reviews(self, tmp_path):
-        """Test when some IDs in keyword file don't exist in original."""
-        kw_file = tmp_path / "keywords.csv"
-        orig_file = tmp_path / "original.csv"
-        
-        pl.DataFrame({"id": [1, 99], "category": ["pet", "child"]}).write_csv(kw_file)
-        pl.DataFrame({"id": [1], "review": ["Test"]}).write_csv(orig_file)
-        
-        result = merge_reviews_and_keywords(str(kw_file), str(orig_file), "id")
-        
-        # Should handle left join gracefully
-        assert result.height <= 2
-
-
 class TestCreateChunks:
     """Tests for main chunking logic."""
     
@@ -187,7 +140,7 @@ class TestCreateChunks:
         exclusions = {"pet": []}
         
         result = create_chunks(df, mock_tokenizer, max_len=10, 
-                              keywords=keywords, exclusions=exclusions)
+                              keywords=keywords, exclusions=exclusions,id_col="id",review_col="review")
         
         assert len(result) > 0
         assert result[0]["original_id"] == 1
@@ -197,7 +150,7 @@ class TestCreateChunks:
         """Test with empty DataFrame."""
         df = pl.DataFrame({"id": [], "review": [], "category": []})
         result = create_chunks(df, mock_tokenizer, max_len=10, 
-                              keywords={"pet": ["dog"]}, exclusions={})
+                              keywords={"pet": ["dog"]}, exclusions={},id_col="id",review_col="review")
         assert len(result) == 0
     
     def test_no_keywords_found(self, mock_tokenizer):
@@ -212,7 +165,7 @@ class TestCreateChunks:
         exclusions = {"pet": []}
         
         result = create_chunks(df, mock_tokenizer, max_len=10,
-                              keywords=keywords, exclusions=exclusions)
+                              keywords=keywords, exclusions=exclusions,id_col="id",review_col="review")
         
         # Should not create chunks without keyword matches
         assert len(result) == 0
@@ -229,7 +182,7 @@ class TestCreateChunks:
         exclusions = {"pet": ["no dogs"]}
         
         result = create_chunks(df, mock_tokenizer, max_len=10,
-                              keywords=keywords, exclusions=exclusions)
+                              keywords=keywords, exclusions=exclusions,id_col="id",review_col="review")
         
         # Exclusion should prevent chunk creation
         assert len(result) == 0
@@ -255,11 +208,3 @@ class TestIntegration:
             "review": ["Great hotel allows dogs and cats"]
         }).write_csv(orig_file)
         
-        # Merge
-        merged = merge_reviews_and_keywords(str(kw_file), str(orig_file), "id")
-        assert merged.height == 1
-        
-        # Note: Full create_chunks test requires real tokenizer
-        # This is a structural validation
-        assert "review" in merged.columns
-        assert "category" in merged.columns
